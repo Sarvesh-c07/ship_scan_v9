@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ShipScan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#241544;--ink2:#4B3F6B;--ink3:#6B6488;--ink4:#8B82A8;
+  --violet:#8B5CF6;--violet-d:#7C3AED;--pink:#EC4899;--pink-d:#DB2777;
+  --cyan:#06B6D4;--cyan-d:#0891B2;--amber:#F59E0B;--amber-d:#B45309;
+  --emerald:#10B981;--emerald-d:#059669;--rose:#F43F5E;--rose-d:#E11D48;
+  --brand:linear-gradient(135deg,#8B5CF6,#EC4899,#FB7185);
+  --glass:rgba(255,255,255,.62);--glass-b:rgba(255,255,255,.8);
+  --card-sh:0 28px 64px -28px rgba(124,58,237,.5),0 8px 22px -14px rgba(236,72,153,.22);
+  --r:26px;--rs:13px;
+}
+html,body{height:100%}
+body{font-family:'Manrope',system-ui,sans-serif;background:#F1ECFF;color:var(--ink);font-size:14px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
+input,textarea,button{font-family:inherit}
+input::placeholder,textarea::placeholder{color:#A99FC4}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:rgba(124,58,237,.25);border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes prog{0%{transform:translateX(-110%)}100%{transform:translateX(460%)}}
+@keyframes scan{0%{top:-30%}100%{top:120%}}
+@keyframes float1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(60px,40px) scale(1.12)}}
+@keyframes float2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-70px,50px) scale(1.08)}}
+@keyframes float3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(40px,-60px) scale(1.15)}}
+
+/* aurora */
+.aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(78px)}
+.b1{top:-12%;left:-8%;width:560px;height:560px;background:radial-gradient(circle at 30% 30%,#A78BFA,transparent 70%);opacity:.7;animation:float1 16s ease-in-out infinite}
+.b2{top:-10%;right:-10%;width:600px;height:600px;background:radial-gradient(circle at 60% 40%,#F472B6,transparent 70%);opacity:.6;animation:float2 19s ease-in-out infinite}
+.b3{bottom:-18%;left:18%;width:620px;height:620px;background:radial-gradient(circle at 50% 50%,#22D3EE,transparent 70%);opacity:.55;animation:float3 22s ease-in-out infinite}
+.b4{bottom:-14%;right:8%;width:500px;height:500px;background:radial-gradient(circle at 50% 50%,#FCD34D,transparent 70%);opacity:.45;animation:float1 24s ease-in-out infinite}
+.wrap{position:relative;z-index:1}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;height:68px;padding:0 30px;background:rgba(255,255,255,.6);backdrop-filter:blur(18px) saturate(1.4);border-bottom:1px solid rgba(255,255,255,.7)}
+.logo{position:relative;width:40px;height:40px;border-radius:12px;overflow:hidden;background:var(--brand);box-shadow:0 8px 22px -4px rgba(139,92,246,.6);flex-shrink:0}
+.logo i{position:absolute;left:9px;right:9px;height:2px;background:rgba(255,255,255,.85);border-radius:2px}
+.logo i:nth-child(1){top:13px}.logo i:nth-child(2){top:19px}.logo i:nth-child(3){top:25px}
+.logo .sc{position:absolute;left:-30%;right:-30%;height:16px;top:-30%;background:linear-gradient(180deg,transparent,rgba(255,255,255,.95),transparent);animation:scan 2.4s linear infinite}
+.logo-text h1{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;letter-spacing:-.4px;line-height:1;color:#1A0F38}
+.logo-text p{font-size:11px;color:var(--ink4);margin-top:3px;font-weight:600;letter-spacing:.02em}
+.hdr-pill{margin-left:auto;display:flex;align-items:center;gap:8px;padding:7px 15px;border-radius:22px;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.8);box-shadow:0 4px 14px -6px rgba(124,58,237,.3);font-size:12px;font-weight:700;color:var(--ink2)}
+.dot{width:8px;height:8px;border-radius:50%;background:#C4BBDA;flex-shrink:0;transition:background .3s}
+.dot.running{background:var(--violet);animation:blink 1.2s infinite;box-shadow:0 0 10px var(--violet)}
+.dot.done{background:var(--emerald);box-shadow:0 0 10px var(--emerald)}
+
+/* layout */
+.layout{display:grid;grid-template-columns:340px 1fr;gap:24px;padding:26px 30px;align-items:start}
+
+/* sidebar */
+.sidebar{display:flex;flex-direction:column;gap:20px;padding:24px;border-radius:var(--r);background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:blur(20px) saturate(1.3);box-shadow:var(--card-sh);position:sticky;top:94px}
+.sec{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;margin-bottom:13px}
+.sec.v{background-image:linear-gradient(90deg,#8B5CF6,#EC4899)}
+.sec.p{background-image:linear-gradient(90deg,#EC4899,#F59E0B)}
+.field{display:flex;flex-direction:column;gap:6px}
+.fields{display:flex;flex-direction:column;gap:13px}
+label{font-size:12px;font-weight:700;color:var(--ink2)}
+.lh{font-weight:500;color:var(--ink4)}
+input[type=text],input[type=password],input[type=number]{height:44px;border:1.5px solid rgba(124,58,237,.16);border-radius:var(--rs);font-size:13.5px;font-weight:600;color:var(--ink);padding:0 14px;background:rgba(255,255,255,.72);outline:none;width:100%;transition:border-color .15s,box-shadow .15s}
+input:focus{border-color:var(--violet);box-shadow:0 0 0 4px rgba(139,92,246,.16)}
+#senderEmail:focus{border-color:var(--pink);box-shadow:0 0 0 4px rgba(236,72,153,.14)}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12.5px}
+.lnk{font-size:11.5px;font-weight:700;text-decoration:none;background:linear-gradient(90deg,#8B5CF6,#EC4899);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.row2{display:grid;grid-template-columns:1fr 1.25fr;gap:11px}
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(124,58,237,.2),transparent)}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(236,72,153,.08));border:1px solid rgba(255,255,255,.6);font-size:11.5px;color:var(--ink3);line-height:1.55;font-weight:600}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;border:none;cursor:pointer;border-radius:var(--rs);font-weight:800;font-size:13.5px;padding:13px 24px;transition:filter .15s,transform .15s,box-shadow .15s;color:#fff}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none!important;filter:none!important}
+.btn-primary{background:var(--brand);box-shadow:0 10px 26px -8px rgba(139,92,246,.6)}
+.btn-primary:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-2px)}
+.btn-cyan{background:linear-gradient(135deg,#06B6D4,#8B5CF6);box-shadow:0 10px 26px -8px rgba(6,182,212,.6)}
+.btn-cyan:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-2px)}
+.btn-emerald{background:linear-gradient(135deg,#10B981,#06B6D4);box-shadow:0 8px 20px -6px rgba(6,182,212,.5)}
+.btn-emerald:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-2px)}
+.btn-sm{padding:9px 16px;font-size:12.5px;font-weight:700}
+.btn-outline{background:rgba(255,255,255,.5);color:var(--ink2);border:1.5px solid rgba(124,58,237,.22)}
+.btn-outline:hover:not(:disabled){border-color:rgba(124,58,237,.45)}
+.btn-ghost-em{background:rgba(16,185,129,.12);color:var(--emerald-d);border:1.5px solid rgba(16,185,129,.4)}
+.btn-ghost-em:hover:not(:disabled){background:rgba(16,185,129,.2)}
+.btn-row{display:flex;gap:11px;flex-wrap:wrap}
+
+/* alert */
+.alert{display:none;align-items:center;gap:8px;border-radius:var(--rs);padding:11px 14px;font-size:12.5px;font-weight:700}
+.alert.show{display:flex}
+.alert-error{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:var(--rose-d)}
+
+/* main */
+.main{border-radius:var(--r);background:var(--glass);border:1px solid var(--glass-b);backdrop-filter:blur(20px) saturate(1.3);box-shadow:0 28px 64px -28px rgba(124,58,237,.5),0 8px 22px -14px rgba(34,211,238,.22);overflow:hidden}
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:26px 28px 20px}
+.hero h2{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;line-height:1.05;letter-spacing:-.8px;background:var(--brand);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.hero p{margin-top:7px;font-size:13.5px;color:var(--ink3);font-weight:600;max-width:480px}
+.seg{display:inline-flex;gap:5px;padding:5px;border-radius:16px;background:rgba(124,58,237,.08);border:1px solid rgba(255,255,255,.7);flex-shrink:0}
+.tab{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;border:none;cursor:pointer;padding:10px 18px;font-size:13px;font-weight:700;border-radius:12px;transition:.15s;font-family:'Space Grotesk',sans-serif;color:#7B6F9C;background:transparent}
+.tab.active{color:#fff;background:var(--brand);box-shadow:0 8px 20px -6px rgba(139,92,246,.55)}
+#tab2.active{background:linear-gradient(135deg,#06B6D4,#8B5CF6);box-shadow:0 8px 20px -6px rgba(6,182,212,.55)}
+.tab-badge{background:rgba(139,92,246,.14);color:var(--violet-d);border-radius:9px;padding:2px 8px;font-size:10.5px;font-weight:800;display:none}
+.tab-badge.show{display:inline}
+.tab.active .tab-badge{background:rgba(255,255,255,.28);color:#fff}
+
+.panel{display:none;padding:4px 28px 28px}
+.panel.active{display:block}
+.flabel{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--violet-d)}
+
+/* filter box */
+.filter-box{border:1.5px solid rgba(124,58,237,.16);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.55);transition:border-color .15s,box-shadow .15s}
+.filter-box:focus-within{border-color:var(--violet);box-shadow:0 0 0 4px rgba(139,92,246,.16)}
+.filter-head{display:flex;align-items:center;justify-content:space-between;padding:11px 15px 4px;font-size:11px;font-weight:700;color:var(--ink4)}
+.filter-count{background:linear-gradient(135deg,#8B5CF6,#EC4899);color:#fff;border-radius:9px;padding:2px 10px;font-weight:800}
+textarea.fta{width:100%;border:none;outline:none;resize:none;background:transparent;color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:500;line-height:1.95;padding:6px 15px 12px;min-height:118px}
+textarea.fta::placeholder{color:#A99FC4;font-family:'JetBrains Mono',monospace}
+.filter-pills{display:flex;flex-wrap:wrap;gap:6px;padding:11px 15px;border-top:1px dashed rgba(124,58,237,.18)}
+.fp{display:inline-flex;align-items:center;border-radius:7px;padding:3px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
+.fp.exact{background:rgba(139,92,246,.14);color:var(--violet-d)}
+.fp.wild{background:rgba(245,158,11,.16);color:var(--amber-d)}
+.code{padding:1px 6px;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600}
+.code.v{background:rgba(139,92,246,.14);color:var(--violet-d)}
+.code.a{background:rgba(245,158,11,.16);color:var(--amber-d)}
+.hint{font-size:11.5px;color:var(--ink4);font-weight:600;line-height:1.6}
+
+/* match options */
+.opts{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:13px;padding:13px 15px;border-radius:16px;background:rgba(255,255,255,.5);border:1.5px solid rgba(124,58,237,.14)}
+.opt-group{display:flex;align-items:center;gap:8px}
+.opt-group>label{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--violet-d)}
+select.mode-sel{height:36px;border:1.5px solid rgba(124,58,237,.2);border-radius:10px;background:rgba(255,255,255,.85);color:var(--ink);font-weight:700;font-size:12.5px;padding:0 10px;outline:none;cursor:pointer}
+select.mode-sel:focus{border-color:var(--violet);box-shadow:0 0 0 4px rgba(139,92,246,.14)}
+.toggle{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;font-weight:700;color:var(--ink2);user-select:none}
+.toggle input{width:16px;height:16px;accent-color:var(--violet);cursor:pointer}
+.toggle.disabled{opacity:.45;cursor:not-allowed}
+.opt-sep{width:1px;align-self:stretch;background:rgba(124,58,237,.16)}
+.opt-note{font-size:11px;color:var(--ink4);font-weight:600}
+.chip-skip{background:rgba(100,116,139,.16);color:#475569}
+.chip-would{background:rgba(6,182,212,.14);color:var(--cyan-d)}
+.b-skip{background:rgba(100,116,139,.16);color:#475569}
+.b-would{background:rgba(6,182,212,.14);color:var(--cyan-d)}
+.b-check{background:rgba(245,158,11,.16);color:var(--amber-d)}
+
+/* file-type chips */
+.chip-toggles{display:flex;flex-wrap:wrap;gap:6px}
+.ft{border:1.5px solid rgba(124,58,237,.2);background:rgba(255,255,255,.7);color:var(--ink3);border-radius:9px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;transition:.13s;font-family:inherit}
+.ft:hover{border-color:rgba(124,58,237,.45)}
+.ft.active{background:linear-gradient(135deg,#8B5CF6,#EC4899);color:#fff;border-color:transparent;box-shadow:0 6px 16px -6px rgba(139,92,246,.55)}
+.ft.ft-all.active{background:linear-gradient(135deg,#06B6D4,#8B5CF6)}
+
+/* progress */
+.prog-wrap{height:4px;border-radius:4px;background:rgba(124,58,237,.12);overflow:hidden;display:none;margin-bottom:18px}
+.prog-fill{height:100%;width:24%;border-radius:4px;background:var(--brand);animation:prog 1.5s ease-in-out infinite}
+.prog-fill.cyan{background:linear-gradient(90deg,#06B6D4,#8B5CF6)}
+
+/* chips */
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:800}
+.chip-total{background:rgba(139,92,246,.14);color:var(--violet-d)}
+.chip-saved{background:rgba(16,185,129,.14);color:var(--emerald-d)}
+.chip-failed{background:rgba(244,63,94,.14);color:var(--rose-d)}
+.chip-exists{background:rgba(236,72,153,.14);color:var(--pink-d)}
+
+/* tables */
+.tbl-wrap{border:1px solid rgba(124,58,237,.14);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.5)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:linear-gradient(90deg,rgba(139,92,246,.1),rgba(236,72,153,.08))}
+#t2Body~thead,.t2 thead tr{background:linear-gradient(90deg,rgba(6,182,212,.1),rgba(139,92,246,.08))}
+th{font-family:'Space Grotesk',sans-serif;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--violet-d);padding:12px 15px;text-align:left;white-space:nowrap}
+.t2 th{color:var(--cyan-d)}
+th.cb-col{width:46px;text-align:center}
+td{padding:12px 15px;border-top:1px solid rgba(124,58,237,.09);color:var(--ink3);font-weight:600;vertical-align:middle}
+tbody tr:hover td{background:rgba(139,92,246,.05)}
+tr.selected td{background:rgba(139,92,246,.1)}
+td.fn{color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:500}
+td.flt{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--violet-d)}
+td.num{color:var(--ink4);font-weight:700}
+input[type=checkbox]{width:17px;height:17px;accent-color:var(--violet);cursor:pointer}
+
+.badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:800}
+.b-saved{background:rgba(16,185,129,.14);color:var(--emerald-d)}
+.b-failed{background:rgba(244,63,94,.14);color:var(--rose-d)}
+.b-exists{background:rgba(236,72,153,.14);color:var(--pink-d)}
+.b-pend{background:rgba(124,58,237,.1);color:var(--ink4)}
+.size-tag{color:var(--ink4);font-weight:700}
+
+/* console */
+.console{margin-top:18px;background:#160C32;border:1px solid rgba(167,139,250,.2);border-radius:18px;padding:15px 17px;height:184px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.95;box-shadow:inset 0 2px 20px rgba(0,0,0,.3)}
+.cl{display:flex;gap:11px}
+.ct{color:#6D5B9E;flex-shrink:0}
+.cm.success{color:#34D399}.cm.error{color:#FB7185}.cm.warn{color:#FBBF24}.cm.info{color:#C4B5FD}
+.cempty{color:#6D5B9E;font-style:italic}
+
+/* empty state */
+.empty{text-align:center;padding:52px 20px}
+.empty-icon{width:66px;height:66px;margin:0 auto 16px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:28px;border:1px solid rgba(255,255,255,.7)}
+.empty-icon.v{background:linear-gradient(135deg,rgba(139,92,246,.16),rgba(236,72,153,.12))}
+.empty-icon.c{background:linear-gradient(135deg,rgba(6,182,212,.16),rgba(139,92,246,.12))}
+.empty-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#2E1D52}
+.empty-sub{font-size:13px;color:var(--ink4);margin-top:6px;font-weight:600;max-width:440px;margin-left:auto;margin-right:auto}
+
+/* browse toolbar */
+.browse-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.sel-count{font-size:13px;font-weight:800;color:var(--violet-d)}
+.sel-info{font-size:12px;color:var(--ink4);font-weight:600}
+
+/* save result */
+.save-result{display:none;margin-top:14px;border-radius:16px;padding:16px 18px;font-size:13px}
+.save-result.show{display:block}
+.save-result.ok{background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(6,182,212,.1));border:1px solid rgba(16,185,129,.3)}
+.save-result.err{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3)}
+.save-result h4{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;margin-bottom:9px;color:var(--emerald-d)}
+.save-result.err h4{color:var(--rose-d)}
+.save-result ul{list-style:none;display:flex;flex-direction:column;gap:3px}
+.save-result li{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#0F766E;font-weight:500}
+
+@media(max-width:820px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:static}
+  .hero h2{font-size:26px}
+}
+</style>
+</head>
+<body>
+
+<div class="aurora">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+</div>
+
+<div class="wrap">
+
+<!-- Header -->
+<header class="hdr">
+  <div class="logo"><i></i><i></i><i></i><div class="sc"></div></div>
+  <div class="logo-text"><h1>ShipScan</h1><p>Shipping&nbsp;Bill&nbsp;Extractor</p></div>
+  <div class="hdr-pill"><div class="dot" id="dot"></div><span id="statusLbl">Idle</span></div>
+</header>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div>
+      <div class="sec v">Gmail Account</div>
+      <div class="fields">
+        <div class="field">
+          <label>Your Gmail address</label>
+          <input type="text" id="myEmail" placeholder="you@gmail.com">
+        </div>
+        <div class="field">
+          <label>App password</label>
+          <input type="password" id="appPass" placeholder="xxxx xxxx xxxx xxxx" autocomplete="new-password">
+          <a class="lnk" href="https://myaccount.google.com/apppasswords" target="_blank">Get an App Password →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="sec p">Source</div>
+      <div class="fields">
+        <div class="field">
+          <label>Sender email</label>
+          <input type="text" id="senderEmail" placeholder="supplier@example.com">
+        </div>
+        <div class="field">
+          <label>Subject filter <span class="lh">(optional — speeds up fetch)</span></label>
+          <textarea id="subjectInput" rows="2" placeholder="e.g. Shipping Bill&#10;one phrase per line (matches are OR'd)" style="resize:vertical;width:100%;font:inherit"></textarea>
+          <div class="lh" style="margin-top:4px">Paste the constant part of the subject. Case-insensitive substring match. Leave blank to fetch all.</div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Days back <span class="lh">(0=all)</span></label>
+            <input type="number" id="daysBack" value="30" min="0" max="9999">
+          </div>
+          <div class="field">
+            <label>Save folder</label>
+            <input type="text" id="saveFolder" class="mono" placeholder="C:\Bills">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="alert alert-error" id="sideAlert">⚠ <span id="sideAlertMsg"></span></div>
+    <div class="note"><span>🔒</span><span>Credentials are shared across both tabs and never leave your machine.</span></div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+
+    <div class="hero">
+      <div>
+        <h2 id="heroTitle">Targeted Extract</h2>
+        <p id="heroSub">Filter by filename or pattern and auto-download every match, logged to a styled Excel report.</p>
+      </div>
+      <div class="seg">
+        <button class="tab active" id="tab1" onclick="switchTab(1)">◎ Targeted Extract</button>
+        <button class="tab" id="tab2" onclick="switchTab(2)">▦ Browse &amp; Pick <span class="tab-badge" id="badge2">0</span></button>
+      </div>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="panel active" id="panel1">
+
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
+        <span class="flabel">File filter</span>
+        <span class="hint">leave blank to fetch all files of the selected types</span>
+      </div>
+      <div class="filter-box">
+        <div class="filter-head">
+          <span>One filename or pattern per line</span>
+          <span class="filter-count" id="filterCount">0</span>
+        </div>
+        <textarea class="fta" id="filterInput" placeholder="348.pdf&#10;12345.pdf&#10;SB_*_2024.pdf&#10;*invoice*" oninput="onFilterInput()"></textarea>
+        <div class="filter-pills" id="filterPills" style="display:none"></div>
+      </div>
+      <div class="hint" id="modeHint" style="margin-top:9px">
+        Contains: <code class="code v">1234567</code> finds <code class="code v">SB_1234567_2024.pdf</code> &nbsp;·&nbsp; Wildcard: <code class="code a">SB_*</code> <code class="code a">*2024*</code>
+      </div>
+
+      <!-- match options -->
+      <div class="opts">
+        <div class="opt-group" style="flex-basis:100%">
+          <label>Files</label>
+          <div class="chip-toggles" id="fileTypes">
+            <button type="button" class="ft active" data-ft="pdf"     onclick="toggleFt(this)">PDF</button>
+            <button type="button" class="ft"        data-ft="excel"   onclick="toggleFt(this)">Excel</button>
+            <button type="button" class="ft"        data-ft="word"    onclick="toggleFt(this)">Word</button>
+            <button type="button" class="ft"        data-ft="image"   onclick="toggleFt(this)">Images</button>
+            <button type="button" class="ft"        data-ft="archive" onclick="toggleFt(this)">Archives</button>
+            <button type="button" class="ft"        data-ft="ppt"     onclick="toggleFt(this)">Slides</button>
+            <button type="button" class="ft ft-all" data-ft="all"     onclick="toggleFt(this)">All types</button>
+          </div>
+        </div>
+        <div class="opt-group">
+          <label>Match</label>
+          <select class="mode-sel" id="matchMode" onchange="onModeChange()">
+            <option value="contains" selected>Contains</option>
+            <option value="exact">Exact</option>
+            <option value="wildcard">Wildcard</option>
+            <option value="regex">Regex</option>
+          </select>
+        </div>
+        <div class="opt-sep"></div>
+        <label class="toggle"><input type="checkbox" id="matchSubject"> Also match subject</label>
+        <label class="toggle" id="textToggle"><input type="checkbox" id="searchText"> Search inside PDF text <span class="opt-note" id="textNote"></span></label>
+      </div>
+
+      <div class="btn-row" style="margin:18px 0 20px">
+        <button class="btn btn-primary" id="runBtn" onclick="runTargeted(false)">▶&nbsp; Fetch PDFs</button>
+        <button class="btn btn-cyan btn-sm" id="previewBtn" onclick="runTargeted(true)">👁&nbsp; Preview</button>
+        <button class="btn btn-ghost-em btn-sm" id="dlBtn" onclick="dlExcel()" style="display:none">⬇&nbsp; Excel report</button>
+        <button class="btn btn-outline btn-sm" id="resetBtn" onclick="resetTargeted()" style="display:none">↩&nbsp; Reset</button>
+      </div>
+
+      <div id="t1Empty" class="empty">
+        <div class="empty-icon v">🎯</div>
+        <div class="empty-title">Type your filters, then fetch</div>
+        <div class="empty-sub">Only files matching your filters are downloaded &amp; logged to Excel.</div>
+      </div>
+
+      <div id="t1Results" style="display:none">
+        <div class="prog-wrap" id="prog1"><div class="prog-fill"></div></div>
+        <div class="chips">
+          <div class="chip chip-total"  id="c1Total">0 total</div>
+          <div class="chip chip-saved"  id="c1Saved">0 saved</div>
+          <div class="chip chip-failed" id="c1Failed">0 failed</div>
+          <div class="chip chip-exists" id="c1Exists">0 existed</div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Filename</th><th>Matched Via</th><th>Date</th><th>Size</th><th>Status</th>
+            </tr></thead>
+            <tbody id="t1Body"></tbody>
+          </table>
+        </div>
+        <div class="console" id="console1"><div class="cempty">Console — awaiting run…</div></div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="panel t2" id="panel2">
+
+      <div class="btn-row" style="margin-bottom:6px">
+        <button class="btn btn-cyan" id="browseBtn" onclick="runBrowse()">⌕&nbsp; Load all files from this sender</button>
+        <button class="btn btn-outline btn-sm" id="browseResetBtn" onclick="resetBrowse()" style="display:none">↩&nbsp; Reload</button>
+      </div>
+
+      <div id="t2Empty" class="empty">
+        <div class="empty-icon c">📋</div>
+        <div class="empty-title">Browse every attachment from a sender</div>
+        <div class="empty-sub">Hit the button — all attachments of the selected types appear newest-first. Check the ones you want and save them to your folder.</div>
+      </div>
+
+      <div id="t2Results" style="display:none">
+        <div class="prog-wrap" id="prog2"><div class="prog-fill cyan"></div></div>
+
+        <div class="browse-toolbar">
+          <span class="sel-count" id="selCount">0 selected</span>
+          <span class="sel-info" id="totalFound"></span>
+          <div style="flex:1"></div>
+          <button class="btn btn-outline btn-sm" onclick="selectAll()">Select all</button>
+          <button class="btn btn-outline btn-sm" onclick="clearSel()">Clear</button>
+          <button class="btn btn-emerald btn-sm" id="saveSelBtn" onclick="saveSelected()" disabled>💾&nbsp; Save selected</button>
+        </div>
+
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th class="cb-col"><input type="checkbox" id="masterCb" onchange="toggleAll(this)" title="Select all"></th>
+              <th>#</th><th>Filename</th><th>Received</th><th>Subject</th><th>Size</th>
+            </tr></thead>
+            <tbody id="t2Body"></tbody>
+          </table>
+        </div>
+
+        <div class="save-result" id="saveResult"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+// ── shared state ─────────────────────────────────────────────────────────────
+const HAS_PYPDF = {{ 'true' if has_pypdf else 'false' }};
+let t1Poll = null;
+let browsePdfs = [];
+let lastWasPreview = false;
+
+const HERO = {
+  1: {t:"Targeted Extract", s:"Filter by filename or pattern and auto-download every match, logged to a styled Excel report."},
+  2: {t:"Browse & Pick",    s:"List every attachment a sender ever sent you, newest first, then cherry-pick what to save."}
+};
+
+// ── tab switch ────────────────────────────────────────────────────────────────
+function switchTab(n) {
+  [1,2].forEach(i => {
+    g(`tab${i}`).classList.toggle("active", i===n);
+    g(`panel${i}`).classList.toggle("active", i===n);
+  });
+  g("heroTitle").textContent = HERO[n].t;
+  g("heroSub").textContent   = HERO[n].s;
+}
+
+// ── sidebar validation ────────────────────────────────────────────────────────
+function getConfig(requireFolder=true) {
+  const my = v("myEmail"), ap = v("appPass"), se = v("senderEmail"), sf = v("saveFolder");
+  if (!my || !ap) { sideErr("Enter your Gmail address and App Password."); return null; }
+  if (!se)        { sideErr("Enter the sender email to fetch from."); return null; }
+  if (requireFolder && !sf) { sideErr("Enter a save folder path."); return null; }
+  hideSideErr();
+  return { gmail_address:my, app_password:ap, sender_email:se, days_back:v("daysBack"), save_folder:sf,
+           subject: (g("subjectInput") ? g("subjectInput").value : ""),
+           file_types: getFileTypes() };
+}
+
+// ── file-type chips ───────────────────────────────────────────────────────────
+function toggleFt(btn) {
+  const ft  = btn.dataset.ft;
+  const all = document.querySelector('.ft[data-ft="all"]');
+  if (ft === "all") {
+    const turnOn = !all.classList.contains("active");
+    document.querySelectorAll(".ft").forEach(b => b.classList.remove("active"));
+    all.classList.toggle("active", turnOn);
+  } else {
+    all.classList.remove("active");
+    btn.classList.toggle("active");
+  }
+  // never allow an empty selection — fall back to PDF
+  if (getFileTypes().length === 0)
+    document.querySelector('.ft[data-ft="pdf"]').classList.add("active");
+}
+
+function getFileTypes() {
+  const all = document.querySelector('.ft[data-ft="all"]');
+  if (all && all.classList.contains("active")) return ["all"];
+  return Array.from(document.querySelectorAll(".ft.active")).map(b => b.dataset.ft);
+}
+
+// ── filter pills ──────────────────────────────────────────────────────────────
+function onFilterInput() {
+  const lines = g("filterInput").value.split("\n").map(l=>l.trim()).filter(Boolean);
+  g("filterCount").textContent = lines.length;
+  const pills = g("filterPills");
+  if (!lines.length) { pills.style.display="none"; pills.innerHTML=""; return; }
+  const mode = v("matchMode") || "contains";
+  pills.style.display = "flex";
+  pills.innerHTML = lines.map(l => {
+    const wc = (mode==="wildcard") || (mode==="contains" && (l.includes("*")||l.includes("?"))) || mode==="regex";
+    return `<span class="fp ${wc?"wild":"exact"}">${esc(l)}</span>`;
+  }).join("");
+}
+
+const MODE_HINTS = {
+  contains: 'Contains: <code class="code v">1234567</code> finds <code class="code v">SB_1234567_2024.pdf</code> &nbsp;·&nbsp; explicit <code class="code a">*</code> <code class="code a">?</code> still work',
+  exact:    'Exact: whole filename must match (extension ignored). <code class="code v">1234567.pdf</code> matches only <code class="code v">1234567.pdf</code>',
+  wildcard: 'Wildcard: <code class="code a">SB_*</code> <code class="code a">*2024*</code> — a bare term is auto-wrapped as <code class="code a">*term*</code>',
+  regex:    'Regex (Python): <code class="code a">sb_20\\d\\d</code> <code class="code a">^inv.*final</code> — applied to filename / subject / text'
+};
+function onModeChange() {
+  const mode = v("matchMode") || "contains";
+  g("modeHint").innerHTML = MODE_HINTS[mode] || MODE_HINTS.contains;
+  onFilterInput();
+}
+
+// ── TAB 1: Targeted ──────────────────────────────────────────────────────────
+function runTargeted(preview) {
+  const cfg = getConfig(!preview);   // preview doesn't need a save folder
+  if (!cfg) return;
+  cfg.filters       = g("filterInput").value;
+  cfg.match_mode    = v("matchMode") || "contains";
+  cfg.match_subject = g("matchSubject").checked;
+  cfg.search_text   = g("searchText").checked;
+  cfg.preview       = !!preview;
+  lastWasPreview    = !!preview;
+
+  g("runBtn").disabled = true;
+  g("previewBtn").disabled = true;
+  g("dlBtn").style.display = "none";
+  g("resetBtn").style.display = "none";
+  g("t1Empty").style.display = "none";
+  g("t1Results").style.display = "block";
+  g("prog1").style.display = "block";
+  g("t1Body").innerHTML = "";
+  g("console1").innerHTML = '<div class="cempty">' + (preview ? "Previewing…" : "Connecting…") + '</div>';
+  setDot("running");
+
+  fetch("/run", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(cfg)})
+    .then(r=>r.json())
+    .then(d => {
+      if (d.error) { addConsole("console1",{t:"",msg:d.error,lvl:"error"}); stopT1(); return; }
+      t1Poll = setInterval(pollT1, 1500);
+    })
+    .catch(e => { addConsole("console1",{t:"",msg:""+e,lvl:"error"}); stopT1(); });
+}
+
+function pollT1() {
+  fetch("/status").then(r=>r.json()).then(d => {
+    renderT1Rows(d.rows);
+    renderConsole("console1", d.logs);
+    if (d.summary?.total !== undefined) renderChips(d.summary);
+    if (d.done) { clearInterval(t1Poll); stopT1(); }
+  });
+}
+
+function renderT1Rows(rows) {
+  if (!rows?.length) return;
+  g("t1Body").innerHTML = rows.map((r,i) => `
+    <tr>
+      <td class="num">${i+1}</td>
+      <td class="fn">${esc(r.filename)}</td>
+      <td class="flt">${esc(r.matched_filter)||"—"}</td>
+      <td>${esc(r.email_date)||"—"}</td>
+      <td><span class="size-tag">${r.size_kb!=null?r.size_kb+" KB":"—"}</span></td>
+      <td>${statusBadge(r.status)}</td>
+    </tr>`).join("");
+}
+
+function renderChips(s) {
+  if (s.preview) {
+    g("c1Total").textContent  = `${s.total} candidates`;
+    g("c1Saved").textContent  = `${s.would||0} would save`;
+    g("c1Saved").className     = "chip chip-would";
+    g("c1Failed").textContent = `${s.skipped||0} to check`;
+    g("c1Failed").className     = "chip chip-skip";
+    g("c1Exists").style.display = "none";
+    return;
+  }
+  g("c1Exists").style.display = "";
+  g("c1Saved").className  = "chip chip-saved";
+  g("c1Failed").className = "chip chip-failed";
+  g("c1Total").textContent  = `${s.total} total`;
+  g("c1Saved").textContent  = `${s.saved} saved`;
+  g("c1Failed").textContent = `${s.failed} failed`;
+  g("c1Exists").textContent = `${s.exists} existed` + (s.skipped ? ` · ${s.skipped} skipped` : "");
+}
+
+function stopT1() {
+  g("prog1").style.display = "none";
+  g("runBtn").disabled = false;
+  g("previewBtn").disabled = false;
+  g("dlBtn").style.display = lastWasPreview ? "none" : "inline-flex";
+  g("resetBtn").style.display = "inline-flex";
+  setDot("done");
+}
+
+function resetTargeted() {
+  g("t1Results").style.display = "none";
+  g("t1Empty").style.display = "block";
+  g("dlBtn").style.display = "none";
+  g("resetBtn").style.display = "none";
+  g("runBtn").disabled = false;
+  g("previewBtn").disabled = false;
+  // restore default chip styling (preview mode recolours them)
+  g("c1Exists").style.display = "";
+  g("c1Saved").className  = "chip chip-saved";
+  g("c1Failed").className = "chip chip-failed";
+  g("c1Total").className  = "chip chip-total";
+  setDot("");
+}
+
+function dlExcel() { window.location="/download"; }
+
+// ── TAB 2: Browse ─────────────────────────────────────────────────────────────
+function runBrowse() {
+  const cfg = getConfig(false);
+  if (!cfg) return;
+
+  g("browseBtn").disabled = true;
+  g("t2Empty").style.display = "none";
+  g("t2Results").style.display = "block";
+  g("prog2").style.display = "block";
+  g("t2Body").innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--ink4)">Loading attachments from Gmail…</td></tr>`;
+  g("saveResult").className = "save-result";
+  g("saveResult").innerHTML = "";
+  browsePdfs = [];
+  updateSelCount();
+
+  fetch("/browse", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(cfg)})
+    .then(r=>r.json())
+    .then(d => {
+      if (d.error) {
+        g("t2Body").innerHTML = `<tr><td colspan="6" style="text-align:center;padding:28px;color:var(--rose-d)">${esc(d.error)}</td></tr>`;
+        g("prog2").style.display = "none";
+        g("browseBtn").disabled = false;
+        return;
+      }
+      pollBrowse();
+    })
+    .catch(e => {
+      g("t2Body").innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--rose-d);padding:20px">${esc(""+e)}</td></tr>`;
+      g("browseBtn").disabled = false;
+    });
+}
+
+function pollBrowse() {
+  fetch("/browse_status").then(r=>r.json()).then(d => {
+    if (d.error) {
+      g("t2Body").innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--rose-d);padding:20px">${esc(d.error)}</td></tr>`;
+      g("prog2").style.display = "none";
+      g("browseBtn").disabled = false;
+      return;
+    }
+    if (d.done) {
+      g("prog2").style.display = "none";
+      g("browseBtn").disabled = false;
+      g("browseResetBtn").style.display = "inline-flex";
+      browsePdfs = d.pdfs || [];
+      renderBrowseTable(browsePdfs);
+      g("badge2").textContent = browsePdfs.length;
+      g("badge2").classList.add("show");
+      g("totalFound").textContent = `${browsePdfs.length} file${browsePdfs.length!==1?"s":""} found — newest first`;
+    } else {
+      setTimeout(pollBrowse, 1500);
+    }
+  });
+}
+
+function renderBrowseTable(pdfs) {
+  const tb = g("t2Body");
+  if (!pdfs.length) {
+    tb.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:36px;color:var(--ink4)">No attachments of the selected types found from this sender in the selected date range.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = pdfs.map((p, i) => `
+    <tr id="brow-${p.id}">
+      <td style="text-align:center">
+        <input type="checkbox" id="cb-${p.id}" onchange="onCbChange()" data-id="${p.id}">
+      </td>
+      <td class="num">${i+1}</td>
+      <td class="fn">${esc(p.filename)}</td>
+      <td style="white-space:nowrap">${esc(p.email_date)}</td>
+      <td style="max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.subject)}">${esc(p.subject)||"—"}</td>
+      <td><span class="size-tag">${p.size_kb} KB</span></td>
+    </tr>`).join("");
+}
+
+function toggleRow(id) {
+  const cb = g(`cb-${id}`);
+  cb.checked = !cb.checked;
+  onCbChange();
+}
+
+function onCbChange() {
+  const checked = getCheckedIds();
+  const master  = g("masterCb");
+  master.indeterminate = checked.length > 0 && checked.length < browsePdfs.length;
+  master.checked = checked.length === browsePdfs.length && browsePdfs.length > 0;
+  browsePdfs.forEach(p => {
+    const row = g(`brow-${p.id}`);
+    if (row) row.classList.toggle("selected", g(`cb-${p.id}`)?.checked);
+  });
+  updateSelCount();
+}
+
+function toggleAll(master) {
+  browsePdfs.forEach(p => {
+    const cb = g(`cb-${p.id}`);
+    if (cb) cb.checked = master.checked;
+  });
+  onCbChange();
+}
+
+function selectAll() { g("masterCb").checked=true; toggleAll(g("masterCb")); }
+function clearSel()  { g("masterCb").checked=false; toggleAll(g("masterCb")); }
+
+function getCheckedIds() {
+  return Array.from(document.querySelectorAll('[data-id]:checked')).map(el=>el.dataset.id);
+}
+
+function updateSelCount() {
+  const n = getCheckedIds().length;
+  g("selCount").textContent = `${n} selected`;
+  g("saveSelBtn").disabled  = n === 0 || !v("saveFolder");
+}
+
+function resetBrowse() {
+  browsePdfs = [];
+  g("t2Results").style.display = "none";
+  g("t2Empty").style.display   = "block";
+  g("browseResetBtn").style.display = "none";
+  g("badge2").classList.remove("show");
+  runBrowse();
+}
+
+function saveSelected() {
+  const sf = v("saveFolder");
+  if (!sf) { sideErr("Enter a save folder path first."); return; }
+  const cfg = getConfig(true);
+  if (!cfg) return;
+
+  const ids = getCheckedIds();
+  if (!ids.length) return;
+
+  g("saveSelBtn").disabled = true;
+  g("saveSelBtn").textContent = "Saving…";
+
+  fetch("/save_selected", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({config: cfg, selected: ids})
+  })
+  .then(r=>r.json())
+  .then(d => {
+    const el = g("saveResult");
+    if (!d.ok) {
+      el.className = "save-result err show";
+      el.innerHTML = `<h4>Error</h4><p>${esc(d.error)}</p>`;
+    } else {
+      const failHtml = d.failed.length
+        ? `<br><b>Failed (${d.failed.length}):</b><ul>${d.failed.map(f=>`<li>${esc(f.file)} — ${esc(f.error)}</li>`).join("")}</ul>`
+        : "";
+      el.className = "save-result ok show";
+      el.innerHTML = `<h4>✓ ${d.saved.length} file${d.saved.length!==1?"s":""} saved to folder</h4>
+        <ul>${d.saved.map(f=>`<li>• ${esc(f)}</li>`).join("")}</ul>${failHtml}`;
+    }
+  })
+  .catch(e => {
+    g("saveResult").className="save-result err show";
+    g("saveResult").innerHTML=`<h4>Error</h4><p>${esc(""+e)}</p>`;
+  })
+  .finally(() => {
+    g("saveSelBtn").disabled = false;
+    g("saveSelBtn").innerHTML = "💾&nbsp; Save selected";
+  });
+}
+
+// ── shared helpers ────────────────────────────────────────────────────────────
+function renderConsole(id, logs) {
+  if (!logs?.length) return;
+  const w = g(id);
+  w.innerHTML = logs.map(l =>
+    `<div class="cl"><span class="ct">${l.t}</span><span class="cm ${l.lvl}">${esc(l.msg)}</span></div>`
+  ).join("");
+  w.scrollTop = w.scrollHeight;
+}
+
+function addConsole(id, l) {
+  const w = g(id);
+  if (w.querySelector(".cempty")) w.innerHTML = "";
+  const d = document.createElement("div");
+  d.className = "cl";
+  d.innerHTML = `<span class="ct">${l.t||""}</span><span class="cm ${l.lvl||"info"}">${esc(l.msg)}</span>`;
+  w.appendChild(d); w.scrollTop = w.scrollHeight;
+}
+
+function statusBadge(s) {
+  if (s==="Saved")          return '<span class="badge b-saved">✓ Saved</span>';
+  if (s==="Failed")         return '<span class="badge b-failed">✗ Failed</span>';
+  if (s==="Already Exists") return '<span class="badge b-exists">⏭ Exists</span>';
+  if (s==="Would Save")     return '<span class="badge b-would">👁 Would save</span>';
+  if (s==="Would Check")    return '<span class="badge b-check">🔍 Text check</span>';
+  if (s==="No Match")       return '<span class="badge b-skip">∅ No match</span>';
+  return '<span class="badge b-pend">⏳ Pending</span>';
+}
+
+function setDot(s) {
+  g("dot").className = "dot"+(s?" "+s:"");
+  g("statusLbl").textContent = s==="running"?"Running…":s==="done"?"Done":"Idle";
+}
+
+function sideErr(m)  { g("sideAlert").classList.add("show"); g("sideAlertMsg").textContent=m; }
+function hideSideErr(){ g("sideAlert").classList.remove("show"); }
+
+// keep the save button enabled-state in sync as the folder is typed
+document.addEventListener("input", e => { if (e.target.id==="saveFolder") updateSelCount(); });
+
+const g   = id => document.getElementById(id);
+const v   = id => (g(id)||{}).value?.trim()||"";
+const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+
+// initialise: disable in-PDF text search if pypdf isn't installed server-side
+(function initOptions(){
+  const note = g("textNote"), toggle = g("textToggle"), cb = g("searchText");
+  if (!HAS_PYPDF) {
+    cb.disabled = true; toggle.classList.add("disabled");
+    note.textContent = "(install pypdf to enable)";
+  } else {
+    note.textContent = "(slower)";
+  }
+})();
+</script>
+</body>
+</html>

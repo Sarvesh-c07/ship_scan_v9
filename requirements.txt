@@ -1,0 +1,5 @@
+Flask
+gunicorn
+imapclient
+openpyxl
+pypdf
